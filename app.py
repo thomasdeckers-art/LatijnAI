@@ -280,14 +280,15 @@ def admin_upload_foto():
 Haal alle woordjes eruit en geef ze terug als JSON lijst.
 Elk woord heeft deze velden:
 - nummer (int): het nummer van het woord
-- woordsoort (string): "znw12" voor zelfstandig naamwoord 1e/2e klasse, "znw3" voor 3e klasse, "ww" voor werkwoord, "bnw" voor bijvoeglijk naamwoord, "bw" voor bijwoord, "vw" voor voegwoord
+- woordsoort (string): leid dit af uit de structuur van het woord
 - grondwoord (string): het eerste woord zoals het in het boek staat
 - veld2 (string of null): genitief, 1e persoon, stam, vrouwelijk, of woordsoortlabel
 - veld3 (string of null): geslacht, stamtijden, onzijdig, of null
 - veld4 (string of null): extra veld indien nodig, anders null
 - vertaling (string): de Nederlandse vertaling
 
-Geef ALLEEN de JSON lijst terug, geen uitleg, geen markdown, geen backticks."""
+Belangrijk: geef ABSOLUUT alleen een JSON array terug, beginnend met [ en eindigend met ].
+Geen tekst ervoor of erna, geen uitleg, geen markdown, geen backticks."""
 
     try:
         response = client.messages.create(
@@ -314,6 +315,11 @@ Geef ALLEEN de JSON lijst terug, geen uitleg, geen markdown, geen backticks."""
 
         import json
         tekst = response.content[0].text.strip()
+        # Verwijder eventuele markdown backticks
+        if tekst.startswith('```'):
+            tekst = tekst.split('\n', 1)[1]
+            tekst = tekst.rsplit('```', 1)[0]
+        tekst = tekst.strip()
         woorden_data = json.loads(tekst)
 
         conn = database.get_db()
