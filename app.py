@@ -261,6 +261,12 @@ def admin_upload_foto():
         return jsonify({'ok': False, 'fout': 'Geen Anthropic API key ingesteld.'})
 
     foto_bytes = foto.read()
+    # Comprimeer als te groot
+    if len(foto_bytes) > 4 * 1024 * 1024:
+        img = Image.open(io.BytesIO(foto_bytes))
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=70)
+        foto_bytes = output.getvalue()
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
     media_type = foto.content_type or 'image/jpeg'
 
