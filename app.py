@@ -7,6 +7,8 @@ import config
 import database
 import os
 import base64
+from PIL import Image
+import io
 from groq import Groq
 import anthropic
 
@@ -261,14 +263,16 @@ def admin_upload_foto():
         return jsonify({'ok': False, 'fout': 'Geen Anthropic API key ingesteld.'})
 
     foto_bytes = foto.read()
-    # Comprimeer als te groot
+
+    # Comprimeer als te groot voor Anthropic API (max 5MB)
     if len(foto_bytes) > 4 * 1024 * 1024:
         img = Image.open(io.BytesIO(foto_bytes))
         output = io.BytesIO()
         img.save(output, format='JPEG', quality=70)
         foto_bytes = output.getvalue()
+
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
-    media_type = foto.content_type or 'image/jpeg'
+    media_type = 'image/jpeg'
 
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
