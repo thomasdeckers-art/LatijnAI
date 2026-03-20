@@ -266,10 +266,11 @@ def admin_upload_foto():
 
     # Comprimeer als te groot voor Anthropic API (max 5MB)
     if len(foto_bytes) > 4 * 1024 * 1024:
-        img = Image.open(io.BytesIO(foto_bytes))
-        output = io.BytesIO()
-        img.save(output, format='JPEG', quality=70)
-        foto_bytes = output.getvalue()
+    img = Image.open(io.BytesIO(foto_bytes))
+    img = img.convert('RGB')
+    output = io.BytesIO()
+    img.save(output, format='JPEG', quality=70)
+    foto_bytes = output.getvalue()
 
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
     media_type = 'image/jpeg'
