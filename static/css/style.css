@@ -1,0 +1,599 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --goud: #BA7517;
+    --goud-licht: #FAEEDA;
+    --goud-rand: #FAC775;
+    --bruin-donker: #412402;
+    --bruin-mid: #633806;
+    --bruin-licht: #854F0B;
+    --achtergrond: #fff9f0;
+    --wit: #ffffff;
+    --fout: #A32D2D;
+    --fout-bg: #FCEBEB;
+    --goed: #3B6D11;
+    --goed-bg: #EAF3DE;
+}
+
+body {
+    font-family: 'Lato', sans-serif;
+    background-color: var(--achtergrond);
+    color: var(--bruin-donker);
+    min-height: 100vh;
+}
+
+/* NAV */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: var(--goud-licht);
+    border-bottom: 1px solid var(--goud-rand);
+}
+
+.logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bruin-donker);
+    text-decoration: none;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.95rem;
+    color: var(--bruin-mid);
+}
+
+.nav-right a {
+    color: var(--bruin-mid);
+    text-decoration: none;
+}
+
+.streak, .xp {
+    font-weight: 700;
+    color: var(--bruin-donker);
+}
+
+/* MAIN */
+main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* AUTH */
+.auth-container {
+    max-width: 400px;
+    margin: 4rem auto;
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.logo-title {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--bruin-donker);
+    margin-bottom: 0.5rem;
+}
+
+.tagline {
+    color: var(--bruin-licht);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--goud-rand);
+    border-radius: 8px;
+    background: var(--wit);
+    font-size: 1rem;
+    color: var(--bruin-donker);
+    font-family: 'Lato', sans-serif;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--goud);
+}
+
+button[type="submit"], button {
+    padding: 0.75rem;
+    background: var(--goud-licht);
+    border: 1px solid var(--goud);
+    border-radius: 8px;
+    color: var(--bruin-donker);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: var(--goud-rand);
+}
+
+.switch {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--bruin-licht);
+}
+
+.switch a {
+    color: var(--bruin-mid);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.error {
+    background: var(--fout-bg);
+    color: var(--fout);
+    border: 1px solid var(--fout);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+/* DASHBOARD */
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.welkom-card {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.welkom-card h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: var(--bruin-donker);
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    display: inline-block;
+    background: var(--goud-rand);
+    color: var(--bruin-donker);
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.4rem 1.2rem;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--bruin-licht);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bruin-donker);
+}
+
+/* MENU CARDS */
+.menu-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.menu-card {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+.menu-card:hover {
+    background: var(--goud-rand);
+}
+
+.menu-icon {
+    font-size: 2rem;
+}
+
+.menu-titel {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    color: var(--bruin-donker);
+    font-size: 1rem;
+}
+
+.menu-sub {
+    font-size: 0.85rem;
+    color: var(--bruin-licht);
+}
+
+/* LEADERBOARD */
+.leaderboard {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.leaderboard h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--bruin-donker);
+    margin-bottom: 1rem;
+}
+
+.leaderboard ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.leaderboard li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: var(--wit);
+    border: 1px solid var(--goud-rand);
+    font-size: 0.95rem;
+}
+
+.leaderboard li.jij {
+    background: var(--goud-rand);
+    font-weight: 700;
+}
+
+.lb-naam {
+    color: var(--bruin-donker);
+}
+
+.lb-xp {
+    color: var(--bruin-licht);
+    font-weight: 700;
+}
+
+/* ADMIN */
+.admin-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.admin-table th, .admin-table td {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--goud-rand);
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.admin-table th {
+    background: var(--goud-licht);
+    font-family: 'Cinzel', serif;
+    color: var(--bruin-donker);
+}
+
+.admin-table tr:nth-child(even) {
+    background: var(--goud-licht);
+}
+
+/* VERTALEN */
+.vertaal-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.pagina-titel {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    color: var(--bruin-donker);
+    margin-bottom: 0.25rem;
+}
+
+.pagina-sub {
+    color: var(--bruin-licht);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+.vertaal-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--goud-rand);
+    border-radius: 8px;
+    background: var(--wit);
+    font-size: 1rem;
+    color: var(--bruin-donker);
+    font-family: 'Lato', sans-serif;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--goud);
+}
+
+.resultaat {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.resultaat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--bruin-licht);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#vertaling-tekst {
+    font-size: 1.1rem;
+    color: var(--bruin-donker);
+    line-height: 1.6;
+}
+
+#grammatica-tekst {
+    font-size: 0.95rem;
+    color: var(--bruin-mid);
+    line-height: 1.6;
+    border-top: 1px solid var(--goud-rand);
+    padding-top: 1rem;
+}
+
+.melding {
+    background: #FEF3C7;
+    border: 1px solid #F59E0B;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    color: #92400E;
+    margin-bottom: 1rem;
+}
+
+.verborgen {
+    display: none;
+}
+
+/* OEFENEN */
+.oefenen-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.keuze-box {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.keuze-rij {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.keuze-rij label {
+    color: var(--bruin-mid);
+    font-size: 0.95rem;
+}
+
+.keuze-rij input {
+    width: 100px;
+    text-align: center;
+}
+
+.voortgang-balk-container {
+    background: var(--goud-rand);
+    border-radius: 8px;
+    height: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.voortgang-balk {
+    background: var(--goud);
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 8px;
+}
+
+.oefenen-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--bruin-licht);
+    margin-bottom: 1rem;
+}
+
+.woord-card {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.woord-nummer {
+    font-size: 0.85rem;
+    color: var(--bruin-licht);
+    margin-bottom: 0.5rem;
+}
+
+.woord-grond {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--bruin-donker);
+    margin-bottom: 0.25rem;
+}
+
+.woord-soort {
+    font-size: 0.85rem;
+    color: var(--bruin-licht);
+    font-style: italic;
+}
+
+.invul-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.invul-rij {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.invul-rij label {
+    font-size: 0.8rem;
+    color: var(--bruin-licht);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.invul-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--goud-rand);
+    border-radius: 8px;
+    background: var(--wit);
+    font-size: 1rem;
+    color: var(--bruin-donker);
+    font-family: 'Lato', sans-serif;
+    transition: border-color 0.2s;
+}
+
+.invul-input:focus {
+    outline: none;
+    border-color: var(--goud);
+}
+
+.feedback-juist {
+    background: var(--goed-bg);
+    color: var(--goed);
+    border: 1px solid var(--goed);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.feedback-fout {
+    background: var(--fout-bg);
+    color: var(--fout);
+    border: 1px solid var(--fout);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.einde-card {
+    background: var(--goud-licht);
+    border: 1px solid var(--goud-rand);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.einde-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: var(--bruin-donker);
+}
+
+.knop-link {
+    display: block;
+    padding: 0.75rem;
+    background: var(--goud-licht);
+    border: 1px solid var(--goud);
+    border-radius: 8px;
+    color: var(--bruin-donker);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Cinzel', serif;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.knop-link:hover {
+    background: var(--goud-rand);
+}

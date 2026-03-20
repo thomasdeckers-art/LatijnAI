@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LatijnAI Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="admin-container">
+    <h1 class="logo-title">Admin Paneel</h1>
+
+    <h2 style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Foto uploaden</h2>
+    <div class="keuze-box" style="margin-bottom: 2rem;">
+        <div class="keuze-rij">
+            <label>Hoofdstuk nummer</label>
+            <input type="number" id="hoofdstuk" min="1" value="1" style="width:100px;">
+        </div>
+        <div>
+            <label style="font-size:0.9rem; color:var(--bruin-licht);">Foto van woordjeslijst</label>
+            <input type="file" id="foto" accept="image/*" style="margin-top:0.5rem;">
+        </div>
+        <button onclick="uploadFoto()">Analyseer en voeg toe</button>
+        <div id="upload-melding" class="verborgen"></div>
+        <div id="upload-resultaat" class="verborgen"></div>
+    </div>
+
+    <h2 style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Gebruikers</h2>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Gebruikersnaam</th>
+                <th>XP</th>
+                <th>Streak</th>
+                <th>Wachtwoord resetten</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.xp }}</td>
+                <td>{{ user.streak }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('reset_password', user_id=user.id) }}" style="display:flex;gap:8px;">
+                        <input type="text" name="new_password" placeholder="Nieuw wachtwoord" required>
+                        <button type="submit">Reset</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function uploadFoto() {
+    const hoofdstuk = document.getElementById('hoofdstuk').value;
+    const foto = document.getElementById('foto').files[0];
+
+    if (!foto) {
+        alert('Kies eerst een foto.');
+        return;
+    }
+
+    const melding = document.getElementById('upload-melding');
+    melding.textContent = 'Bezig met analyseren... even geduld.';
+    melding.className = 'melding';
+    melding.classList.remove('verborgen');
+    document.getElementById('upload-resultaat').classList.add('verborgen');
+
+    const formData = new FormData();
+    formData.append('foto', foto);
+    formData.append('hoofdstuk', hoofdstuk);
+
+    const res = await fetch('/admin/upload_foto', {
+        method: 'POST',
+        body: formData
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+        melding.textContent = `✓ ${data.aantal} woordjes toegevoegd aan hoofdstuk ${hoofdstuk}.`;
+        melding.className = 'feedback-juist';
+        if (data.woorden) {
+            const resultaat = document.getElementById('upload-resultaat');
+            resultaat.innerHTML = '<strong>Toegevoegde woordjes:</strong><br>' +
+                data.woorden.map(w => `#${w.nummer} ${w.grondwoord} — ${w.vertaling}`).join('<br>');
+            resultaat.classList.remove('verborgen');
+        }
+    } else {
+        melding.textContent = '✗ Fout: ' + data.fout;
+        melding.className = 'feedback-fout';
+    }
+}
+</script>
+</body>
+</html>

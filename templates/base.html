@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LatijnAI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav>
+        <div class="nav-left">
+            <a href="{{ url_for('dashboard') }}" class="logo">LatijnAI</a>
+        </div>
+        <div class="nav-right">
+            <span class="streak">🔥 {{ current_user.streak }}</span>
+            <span class="xp">⚡ {{ current_user.xp }} XP</span>
+            <a href="{{ url_for('logout') }}">Uitloggen</a>
+        </div>
+    </nav>
+    {% endif %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="vertaal-container">
+    <h2 class="pagina-titel">Vertalen</h2>
+    <p class="pagina-sub">Typ een Latijnse zin of tekst</p>
+
+    <div class="vertaal-box">
+        <textarea id="input" placeholder="Latijnse tekst hier..." rows="5"></textarea>
+        <button onclick="vertaal()" id="vertaal-btn">Vertaal</button>
+    </div>
+
+    <div id="resultaat" class="resultaat verborgen">
+        <div class="resultaat-label">Vertaling</div>
+        <div id="vertaling-tekst"></div>
+        <button onclick="grammatica()" id="gram-btn">Grammatica-uitleg</button>
+        <div id="grammatica-tekst" class="verborgen"></div>
+    </div>
+
+    <div id="melding" class="melding verborgen"></div>
+</div>
+
+<script>
+let laasteInput = '';
+
+async function vertaal() {
+    const input = document.getElementById('input').value.trim();
+    if (!input) return;
+    laasteInput = input;
+    document.getElementById('vertaal-btn').textContent = 'Bezig...';
+    document.getElementById('resultaat').classList.add('verborgen');
+    document.getElementById('melding').classList.add('verborgen');
+
+    const res = await fetch('/api/vertaal', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tekst: input})
+    });
+    const data = await res.json();
+
+    document.getElementById('vertaal-btn').textContent = 'Vertaal';
+
+    if (data.melding) {
+        document.getElementById('melding').textContent = data.melding;
+        document.getElementById('melding').classList.remove('verborgen');
+    }
+
+    document.getElementById('vertaling-tekst').textContent = data.vertaling;
+    document.getElementById('grammatica-tekst').textContent = '';
+    document.getElementById('grammatica-tekst').classList.add('verborgen');
+    document.getElementById('resultaat').classList.remove('verborgen');
+}
+
+async function grammatica() {
+    document.getElementById('gram-btn').textContent = 'Bezig...';
+    const res = await fetch('/api/grammatica', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tekst: laasteInput})
+    });
+    const data = await res.json();
+    document.getElementById('gram-btn').textContent = 'Grammatica-uitleg';
+    document.getElementById('grammatica-tekst').textContent = data.uitleg;
+    document.getElementById('grammatica-tekst').classList.remove('verborgen');
+}
+</script>
+{% endblock %}

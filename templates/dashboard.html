@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard">
+
+    <div class="welkom-card">
+        <h2>Salve, {{ current_user.username }}!</h2>
+        <div class="badge">{{ level }}</div>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">XP</span>
+                <span class="stat-value">{{ current_user.xp }}</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak</span>
+                <span class="stat-value">🔥 {{ current_user.streak }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="menu-cards">
+        <a href="{{ url_for('oefenen') }}" class="menu-card">
+            <span class="menu-icon">📖</span>
+            <span class="menu-titel">Woordjes oefenen</span>
+            <span class="menu-sub">Leer en herhaal</span>
+        </a>
+        <a href="{{ url_for('vertalen') }}" class="menu-card">
+            <span class="menu-icon">🏛️</span>
+            <span class="menu-titel">Vertalen</span>
+            <span class="menu-sub">Latijn naar Nederlands</span>
+        </a>
+    </div>
+
+    <div class="leaderboard">
+        <h3>Top 5</h3>
+        <ol>
+            {% for user in top5 %}
+            <li class="{% if user.username == current_user.username %}jij{% endif %}">
+                <span class="lb-naam">{{ user.username }}</span>
+                <span class="lb-xp">{{ user.xp }} XP</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+
+</div>
+{% endblock %}

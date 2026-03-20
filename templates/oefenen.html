@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="oefenen-container">
+    <h2 class="pagina-titel">Woordjes oefenen</h2>
+
+    <div id="keuze-scherm">
+        <p class="pagina-sub">Kies welke woordjes je wil oefenen</p>
+        <div class="keuze-box">
+            <div class="keuze-rij">
+                <label>Van woord nr.</label>
+                <input type="number" id="van" min="1" max="800" value="1">
+            </div>
+            <div class="keuze-rij">
+                <label>Tot woord nr.</label>
+                <input type="number" id="tot" min="1" max="800" value="20">
+            </div>
+            <button onclick="startOefening()">Start oefening</button>
+        </div>
+    </div>
+
+    <div id="oefenen-scherm" class="verborgen">
+        <div class="voortgang-balk-container">
+            <div class="voortgang-balk" id="voortgang-balk"></div>
+        </div>
+        <div class="oefenen-stats">
+            <span id="woord-teller">Woord 1</span>
+            <span id="score-teller">✓ 0 &nbsp; ✗ 0</span>
+        </div>
+
+        <div class="woord-card">
+            <div class="woord-nummer" id="woord-nummer">#1</div>
+            <div class="woord-grond" id="grondwoord">aqua</div>
+            <div class="woord-soort" id="woordsoort">zelfstandig naamwoord</div>
+        </div>
+
+        <div class="invul-box" id="invul-box">
+            <!-- velden worden dynamisch geladen -->
+        </div>
+
+        <div id="feedback" class="verborgen"></div>
+
+        <button onclick="controleer()" id="controleer-btn">Controleer</button>
+        <button onclick="volgend()" id="volgend-btn" class="verborgen">Volgend woord →</button>
+    </div>
+
+    <div id="einde-scherm" class="verborgen">
+        <div class="einde-card">
+            <h3>Oefening voltooid!</h3>
+            <div id="einde-stats"></div>
+            <button onclick="opnieuw()">Opnieuw</button>
+            <a href="{{ url_for('dashboard') }}" class="knop-link">Terug naar dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+let woorden = [];
+let huidigIndex = 0;
+let juist = 0;
+let fout = 0;
+let velden = [];
+
+async function startOefening() {
+    const van = document.getElementById('van').value;
+    const tot = document.getElementById('tot').value;
+
+    const res = await fetch(`/api/woorden?van=${van}&tot=${tot}`);
+    const data = await res.json();
+
+    if (!data.woorden || data.woorden.length === 0) {
+        alert('Geen woordjes gevonden in dit bereik. Vraag de admin om woordjes toe te voegen.');
+        return;
+    }
+
+    woorden = data.woorden;
+    huidigIndex = 0;
+    juist = 0;
+    fout = 0;
+
+    document.getElementById('keuze-scherm').classList.add('verborgen');
+    document.getElementById('oefenen-scherm').classList.remove('verborgen');
+    toonWoord();
+}
+
+function toonWoord() {
+    const woord = woorden[huidigIndex];
+    document.getElementById('woord-nummer').textContent = '#' + woord.nummer;
+    document.getElementById('grondwoord').textContent = woord.grondwoord;
+    document.getElementById('woordsoort').textContent = woord.woordsoort;
+    document.getElementById('woord-teller').textContent = `Woord ${huidigIndex + 1} / ${woorden.length}`;
+    document.getElementById('score-teller').innerHTML = `✓ ${juist} &nbsp; ✗ ${fout}`;
+
+    const breedte = (huidigIndex / woorden.length) * 100;
+    document.getElementById('voortgang-balk').style.width = breedte + '%';
+
+    document.getElementById('feedback').classList.add('verborgen');
+    document.getElementById('controleer-btn').classList.remove('verborgen');
+    document.getElementById('volgend-btn').classList.add('verborgen');
+
+    const invulBox = document.getElementById('invul-box');
+    invulBox.innerHTML = '';
+    velden = [];
+
+    const soort = woord.woordsoort;
+
+    if (soort === 'znw12') {
+        voegVeldToe(invulBox, 'Genitief', 'veld2');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else if (soort === 'znw3') {
+        voegVeldToe(invulBox, 'Stam', 'veld2');
+        voegVeldToe(invulBox, 'Geslacht (m./v./o.)', 'veld3');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else if (soort === 'ww') {
+        voegVeldToe(invulBox, '1e persoon', 'veld2');
+        voegVeldToe(invulBox, 'Stamtijden (indien aanwezig)', 'veld3');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else if (soort === 'bnw') {
+        voegVeldToe(invulBox, 'Vrouwelijk', 'veld2');
+        voegVeldToe(invulBox, 'Onzijdig', 'veld3');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else {
+        voegVeldToe(invulBox, woord.woordsoort, 'veld2');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    }
+
+    if (velden.length > 0) {
+        velden[0].input.focus();
+    }
+}
+
+function voegVeldToe(container, label, sleutel) {
+    const div = document.createElement('div');
+    div.className = 'invul-rij';
+    const lbl = document.createElement('label');
+    lbl.textContent = label;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'invul-input';
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const idx = velden.findIndex(v => v.input === input);
+            if (idx < velden.length - 1) {
+                velden[idx + 1].input.focus();
+            } else {
+                controleer();
+            }
+        }
+    });
+    div.appendChild(lbl);
+    div.appendChild(input);
+    container.appendChild(div);
+    velden.push({sleutel, input});
+}
+
+function controleer() {
+    const woord = woorden[huidigIndex];
+    let alleJuist = true;
+
+    velden.forEach(v => {
+        const ingegeven = v.input.value.trim().toLowerCase();
+        let correct = '';
+        if (v.sleutel === 'vertaling') correct = woord.vertaling.toLowerCase();
+        else if (v.sleutel === 'veld2') correct = (woord.veld2 || '').toLowerCase();
+        else if (v.sleutel === 'veld3') correct = (woord.veld3 || '').toLowerCase();
+        else if (v.sleutel === 'veld4') correct = (woord.veld4 || '').toLowerCase();
+
+        if (ingegeven === correct) {
+            v.input.style.borderColor = '#3B6D11';
+            v.input.style.background = '#EAF3DE';
+        } else {
+            v.input.style.borderColor = '#A32D2D';
+            v.input.style.background = '#FCEBEB';
+            alleJuist = false;
+        }
+        v.input.disabled = true;
+    });
+
+    const feedback = document.getElementById('feedback');
+    feedback.classList.remove('verborgen');
+
+    if (alleJuist) {
+        juist++;
+        feedback.textContent = '✓ Correct!';
+        feedback.className = 'feedback-juist';
+    } else {
+        fout++;
+        feedback.textContent = '✗ Fout — bekijk de rode velden';
+        feedback.className = 'feedback-fout';
+    }
+
+    fetch('/api/voortgang', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({word_id: woord.id, juist: alleJuist})
+    });
+
+    document.getElementById('controleer-btn').classList.add('verborgen');
+    document.getElementById('volgend-btn').classList.remove('verborgen');
+}
+
+function volgend() {
+    huidigIndex++;
+    if (huidigIndex >= woorden.length) {
+        toonEinde();
+    } else {
+        toonWoord();
+    }
+}
+
+function toonEinde() {
+    document.getElementById('oefenen-scherm').classList.add('verborgen');
+    document.getElementById('einde-scherm').classList.remove('verborgen');
+    document.getElementById('voortgang-balk').style.width = '100%';
+
+    const totaal = juist + fout;
+    const procent = totaal > 0 ? Math.round((juist / totaal) * 100) : 0;
+    document.getElementById('einde-stats').innerHTML = `
+        <p>✓ ${juist} juist &nbsp; ✗ ${fout} fout</p>
+        <p>${procent}% correct</p>
+    `;
+}
+
+function opnieuw() {
+    document.getElementById('einde-scherm').classList.add('verborgen');
+    document.getElementById('keuze-scherm').classList.remove('verborgen');
+}
+</script>
+{% endblock %}
