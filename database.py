@@ -1,18 +1,20 @@
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import config
 
 def get_db():
-    conn = sqlite3.connect(config.DATABASE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(config.DATABASE_URL)
     return conn
+
+def get_cursor(conn):
+    return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
 def init_db():
     conn = get_db()
-    c = conn.cursor()
+    c = get_cursor(conn)
 
-    # Gebruikers
     c.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         xp INTEGER DEFAULT 0,
@@ -21,9 +23,8 @@ def init_db():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )''')
 
-    # Woorden
     c.execute('''CREATE TABLE IF NOT EXISTS words (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         nummer INTEGER NOT NULL,
         hoofdstuk INTEGER NOT NULL,
         woordsoort TEXT NOT NULL,
@@ -34,9 +35,8 @@ def init_db():
         vertaling TEXT NOT NULL
     )''')
 
-    # Voortgang per gebruiker per woord
     c.execute('''CREATE TABLE IF NOT EXISTS progress (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
         word_id INTEGER NOT NULL,
         score INTEGER DEFAULT 0,
@@ -46,6 +46,7 @@ def init_db():
     )''')
 
     conn.commit()
+    c.close()
     conn.close()
 
 if __name__ == '__main__':

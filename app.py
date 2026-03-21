@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date
-import sqlite3
 import config
 import database
 import os
@@ -36,7 +35,10 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     conn = database.get_db()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    c = database.get_cursor(conn)
+    c.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = c.fetchone()
+    c.close()
     conn.close()
     if user:
         return User(user['id'], user['username'], user['xp'], user['streak'])
@@ -102,13 +104,17 @@ def register():
         if not username or not password:
             return render_template('register.html', error='Vul alle velden in.')
         conn = database.get_db()
-        bestaand = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
+        c = database.get_cursor(conn)
+        c.execute('SELECT id FROM users WHERE username = %s', (username,))
+        bestaand = c.fetchone()
         if bestaand:
+            c.close()
             conn.close()
             return render_template('register.html', error='Gebruikersnaam al in gebruik.')
         hashed = generate_password_hash(password)
-        conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed))
+        c.execute('INSERT INTO users (username, password) VALUES (%s, %s)', (username, hashed))
         conn.commit()
+        c.close()
         conn.close()
         return redirect(url_for('login'))
     return render_template('register.html')
@@ -119,14 +125,42 @@ def login():
         username = request.form['username'].strip()
         password = request.form['password']
         conn = database.get_db()
-        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        c = database.get_cursor(conn)
+        c.execute('SELECT * FROM users WHERE username = %s', (username,))
+        user = c.fetchone()
+        c.close()
         conn.close()
         if user and check_password_hash(user['password'], password):
             u = User(user['id'], user['username'], user['xp'], user['streak'])
             login_user(u)
+            # Streak bijwerken bij login
+            update_streak(user['id'])
             return redirect(url_for('dashboard'))
         return render_template('login.html', error='Verkeerde gebruikersnaam of wachtwoord.')
     return render_template('login.html')
+
+def update_streak(user_id):
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('SELECT last_active, streak FROM users WHERE id = %s', (user_id,))
+    user = c.fetchone()
+    vandaag = date.today().isoformat()
+    if user['last_active'] is None:
+        # Eerste keer inloggen
+        c.execute('UPDATE users SET streak = 1, last_active = %s WHERE id = %s', (vandaag, user_id))
+    else:
+        gisteren = (date.today().replace(day=date.today().day - 1)).isoformat()
+        if user['last_active'] == vandaag:
+            pass  # Vandaag al ingelogd, streak niet aanpassen
+        elif user['last_active'] == gisteren:
+            # Gisteren ingelogd → streak +1
+            c.execute('UPDATE users SET streak = streak + 1, last_active = %s WHERE id = %s', (vandaag, user_id))
+        else:
+            # Streak verbroken
+            c.execute('UPDATE users SET streak = 1, last_active = %s WHERE id = %s', (vandaag, user_id))
+    conn.commit()
+    c.close()
+    conn.close()
 
 @app.route('/logout')
 @login_required
@@ -138,7 +172,10 @@ def logout():
 @login_required
 def dashboard():
     conn = database.get_db()
-    top5 = conn.execute('SELECT username, xp FROM users ORDER BY xp DESC LIMIT 5').fetchall()
+    c = database.get_cursor(conn)
+    c.execute('SELECT username, xp FROM users ORDER BY xp DESC LIMIT 5')
+    top5 = c.fetchall()
+    c.close()
     conn.close()
     level = get_level(current_user.xp)
     return render_template('dashboard.html', top5=top5, level=level)
@@ -170,7 +207,7 @@ def api_grammatica():
     data = request.get_json()
     tekst = data.get('tekst', '')
     systeem = 'Je bent een Latijnse grammatica-expert. Geef een duidelijke grammatica-uitleg van de gegeven Latijnse tekst in het Nederlands. Bespreek woordsoorten, naamvallen, werkwoordsvormen en zinsstructuur.'
-    uitleg, _ = groq_vraag(systeem, tekst)
+    uitleg, _ = groq_vraag(systeem, uitleg)
     return jsonify({'uitleg': uitleg})
 
 @app.route('/api/woorden')
@@ -179,10 +216,13 @@ def api_woorden():
     van = request.args.get('van', 1, type=int)
     tot = request.args.get('tot', 20, type=int)
     conn = database.get_db()
-    woorden = conn.execute(
-        'SELECT * FROM words WHERE nummer >= ? AND nummer <= ? ORDER BY nummer',
+    c = database.get_cursor(conn)
+    c.execute(
+        'SELECT * FROM words WHERE nummer >= %s AND nummer <= %s ORDER BY nummer',
         (van, tot)
-    ).fetchall()
+    )
+    woorden = c.fetchall()
+    c.close()
     conn.close()
     return jsonify({'woorden': [dict(w) for w in woorden]})
 
@@ -194,25 +234,27 @@ def api_voortgang():
     juist = data.get('juist')
     nu = datetime.now().isoformat()
     conn = database.get_db()
-    bestaand = conn.execute(
-        'SELECT * FROM progress WHERE user_id = ? AND word_id = ?',
+    c = database.get_cursor(conn)
+    c.execute(
+        'SELECT * FROM progress WHERE user_id = %s AND word_id = %s',
         (current_user.id, word_id)
-    ).fetchone()
+    )
+    bestaand = c.fetchone()
     if bestaand:
         nieuwe_score = bestaand['score'] + (1 if juist else -1)
-        conn.execute(
-            'UPDATE progress SET score = ?, laatste_keer = ? WHERE user_id = ? AND word_id = ?',
+        c.execute(
+            'UPDATE progress SET score = %s, laatste_keer = %s WHERE user_id = %s AND word_id = %s',
             (nieuwe_score, nu, current_user.id, word_id)
         )
     else:
-        conn.execute(
-            'INSERT INTO progress (user_id, word_id, score, laatste_keer) VALUES (?, ?, ?, ?)',
+        c.execute(
+            'INSERT INTO progress (user_id, word_id, score, laatste_keer) VALUES (%s, %s, %s, %s)',
             (current_user.id, word_id, 1 if juist else 0, nu)
         )
     if juist:
-        xp_gain = 10
-        conn.execute('UPDATE users SET xp = xp + ? WHERE id = ?', (xp_gain, current_user.id))
+        c.execute('UPDATE users SET xp = xp + 10 WHERE id = %s', (current_user.id,))
     conn.commit()
+    c.close()
     conn.close()
     return jsonify({'ok': True})
 
@@ -232,7 +274,10 @@ def admin_panel():
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
     conn = database.get_db()
-    users = conn.execute('SELECT * FROM users ORDER BY xp DESC').fetchall()
+    c = database.get_cursor(conn)
+    c.execute('SELECT * FROM users ORDER BY xp DESC')
+    users = c.fetchall()
+    c.close()
     conn.close()
     return render_template('admin/panel.html', users=users)
 
@@ -243,8 +288,10 @@ def reset_password(user_id):
     new_password = request.form['new_password']
     hashed = generate_password_hash(new_password)
     conn = database.get_db()
-    conn.execute('UPDATE users SET password = ? WHERE id = ?', (hashed, user_id))
+    c = database.get_cursor(conn)
+    c.execute('UPDATE users SET password = %s WHERE id = %s', (hashed, user_id))
     conn.commit()
+    c.close()
     conn.close()
     return redirect(url_for('admin_panel'))
 
@@ -263,8 +310,6 @@ def admin_upload_foto():
         return jsonify({'ok': False, 'fout': 'Geen Anthropic API key ingesteld.'})
 
     foto_bytes = foto.read()
-
-    # Altijd comprimeren naar JPEG voor Anthropic API
     img = Image.open(io.BytesIO(foto_bytes))
     img = img.convert('RGB')
     output = io.BytesIO()
@@ -315,7 +360,6 @@ Geen tekst ervoor of erna, geen uitleg, geen markdown, geen backticks."""
 
         import json
         tekst = response.content[0].text.strip()
-        # Verwijder eventuele markdown backticks
         if tekst.startswith('```'):
             tekst = tekst.split('\n', 1)[1]
             tekst = tekst.rsplit('```', 1)[0]
@@ -323,18 +367,19 @@ Geen tekst ervoor of erna, geen uitleg, geen markdown, geen backticks."""
         woorden_data = json.loads(tekst)
 
         conn = database.get_db()
+        c = database.get_cursor(conn)
         toegevoegd = []
         for w in woorden_data:
-            bestaand = conn.execute(
-                'SELECT id FROM words WHERE nummer = ?', (w['nummer'],)
-            ).fetchone()
+            c.execute('SELECT id FROM words WHERE nummer = %s', (w['nummer'],))
+            bestaand = c.fetchone()
             if not bestaand:
-                conn.execute(
-                    'INSERT INTO words (nummer, hoofdstuk, woordsoort, grondwoord, veld2, veld3, veld4, vertaling) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                c.execute(
+                    'INSERT INTO words (nummer, hoofdstuk, woordsoort, grondwoord, veld2, veld3, veld4, vertaling) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
                     (w['nummer'], hoofdstuk, w['woordsoort'], w['grondwoord'], w.get('veld2'), w.get('veld3'), w.get('veld4'), w['vertaling'])
                 )
                 toegevoegd.append(w)
         conn.commit()
+        c.close()
         conn.close()
 
         return jsonify({'ok': True, 'aantal': len(toegevoegd), 'woorden': toegevoegd})
