@@ -381,9 +381,13 @@ def admin_upload_foto():
     foto_bytes = foto.read()
     img = Image.open(io.BytesIO(foto_bytes))
     img = img.convert('RGB')
+    # Maximale breedte 1200px
+    if img.width > 1200:
+        verhouding = 1200 / img.width
+        nieuwe_hoogte = int(img.height * verhouding)
+        img = img.resize((1200, nieuwe_hoogte), Image.LANCZOS)
     output = io.BytesIO()
-    img.save(output, format='JPEG', quality=70)
-    foto_bytes = output.getvalue()
+    img.save(output, format='JPEG', quality=60)
 
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
     media_type = 'image/jpeg'
