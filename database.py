@@ -45,6 +45,19 @@ def init_db():
         FOREIGN KEY (word_id) REFERENCES words(id)
     )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS suggesties (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        word_id INTEGER NOT NULL,
+        veld TEXT NOT NULL,
+        huidige_waarde TEXT,
+        voorgestelde_waarde TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        aangemaakt_op TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (word_id) REFERENCES words(id)
+    )''')
+
     conn.commit()
     c.close()
     conn.close()

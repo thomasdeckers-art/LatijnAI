@@ -33,9 +33,7 @@
             <div class="woord-soort" id="woordsoort">zelfstandig naamwoord</div>
         </div>
 
-        <div class="invul-box" id="invul-box">
-            <!-- velden worden dynamisch geladen -->
-        </div>
+        <div class="invul-box" id="invul-box"></div>
 
         <div id="feedback" class="verborgen"></div>
 
@@ -52,6 +50,48 @@
         </div>
     </div>
 </div>
+
+<style>
+.juist-antwoord {
+    color: #A32D2D;
+    font-size: 0.85em;
+    margin-top: 3px;
+}
+.suggestie-knop {
+    font-size: 0.8em;
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-top: 4px;
+    cursor: pointer;
+    color: #666;
+}
+.suggestie-knop:hover {
+    background: #f0f0f0;
+}
+.suggestie-form {
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+}
+.suggestie-form input {
+    flex: 1;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+.suggestie-form button {
+    padding: 4px 10px;
+    font-size: 0.85em;
+}
+.suggestie-verzonden {
+    color: green;
+    font-size: 0.8em;
+    margin-top: 4px;
+}
+</style>
 
 <script>
 let woorden = [];
@@ -150,7 +190,7 @@ function voegVeldToe(container, label, sleutel) {
     div.appendChild(lbl);
     div.appendChild(input);
     container.appendChild(div);
-    velden.push({sleutel, input});
+    velden.push({sleutel, input, div});
 }
 
 function controleer() {
@@ -160,7 +200,7 @@ function controleer() {
     velden.forEach(v => {
         const ingegeven = v.input.value.trim().toLowerCase();
         let correct = '';
-        if (v.sleutel === 'vertaling') correct = woord.vertaling.toLowerCase();
+        if (v.sleutel === 'vertaling') correct = (woord.vertaling || '').toLowerCase();
         else if (v.sleutel === 'veld2') correct = (woord.veld2 || '').toLowerCase();
         else if (v.sleutel === 'veld3') correct = (woord.veld3 || '').toLowerCase();
         else if (v.sleutel === 'veld4') correct = (woord.veld4 || '').toLowerCase();
@@ -172,6 +212,19 @@ function controleer() {
             v.input.style.borderColor = '#A32D2D';
             v.input.style.background = '#FCEBEB';
             alleJuist = false;
+
+            // Juist antwoord tonen
+            const juistDiv = document.createElement('div');
+            juistDiv.className = 'juist-antwoord';
+            juistDiv.textContent = '✓ ' + (correct || '(leeg)');
+            v.div.appendChild(juistDiv);
+
+            // Suggestie knop
+            const suggestieKnop = document.createElement('button');
+            suggestieKnop.className = 'suggestie-knop';
+            suggestieKnop.textContent = 'Antwoord klopt niet? Geef suggestie';
+            suggestieKnop.onclick = () => toonSuggestieForm(v.div, woord.id, v.sleutel, correct);
+            v.div.appendChild(suggestieKnop);
         }
         v.input.disabled = true;
     });
@@ -197,6 +250,41 @@ function controleer() {
 
     document.getElementById('controleer-btn').classList.add('verborgen');
     document.getElementById('volgend-btn').classList.remove('verborgen');
+}
+
+function toonSuggestieForm(container, wordId, veld, huidigeWaarde) {
+    // Verwijder bestaande form als die er al is
+    const bestaand = container.querySelector('.suggestie-form');
+    if (bestaand) bestaand.remove();
+
+    const form = document.createElement('div');
+    form.className = 'suggestie-form';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Jouw suggestie...';
+    input.value = huidigeWaarde;
+
+    const knop = document.createElement('button');
+    knop.textContent = 'Stuur';
+    knop.onclick = async () => {
+        const waarde = input.value.trim();
+        if (!waarde) return;
+        await fetch('/api/suggestie', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({word_id: wordId, veld: veld, voorgestelde_waarde: waarde})
+        });
+        form.remove();
+        const bevestiging = document.createElement('div');
+        bevestiging.className = 'suggestie-verzonden';
+        bevestiging.textContent = '✓ Suggestie verzonden!';
+        container.appendChild(bevestiging);
+    };
+
+    form.appendChild(input);
+    form.appendChild(knop);
+    container.appendChild(form);
 }
 
 function volgend() {

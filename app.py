@@ -133,34 +133,9 @@ def login():
         if user and check_password_hash(user['password'], password):
             u = User(user['id'], user['username'], user['xp'], user['streak'])
             login_user(u)
-            # Streak bijwerken bij login
-            update_streak(user['id'])
             return redirect(url_for('dashboard'))
         return render_template('login.html', error='Verkeerde gebruikersnaam of wachtwoord.')
     return render_template('login.html')
-
-def update_streak(user_id):
-    conn = database.get_db()
-    c = database.get_cursor(conn)
-    c.execute('SELECT last_active, streak FROM users WHERE id = %s', (user_id,))
-    user = c.fetchone()
-    vandaag = date.today().isoformat()
-    if user['last_active'] is None:
-        # Eerste keer inloggen
-        c.execute('UPDATE users SET streak = 1, last_active = %s WHERE id = %s', (vandaag, user_id))
-    else:
-        gisteren = (date.today().replace(day=date.today().day - 1)).isoformat()
-        if user['last_active'] == vandaag:
-            pass  # Vandaag al ingelogd, streak niet aanpassen
-        elif user['last_active'] == gisteren:
-            # Gisteren ingelogd → streak +1
-            c.execute('UPDATE users SET streak = streak + 1, last_active = %s WHERE id = %s', (vandaag, user_id))
-        else:
-            # Streak verbroken
-            c.execute('UPDATE users SET streak = 1, last_active = %s WHERE id = %s', (vandaag, user_id))
-    conn.commit()
-    c.close()
-    conn.close()
 
 @app.route('/logout')
 @login_required
@@ -207,7 +182,7 @@ def api_grammatica():
     data = request.get_json()
     tekst = data.get('tekst', '')
     systeem = 'Je bent een Latijnse grammatica-expert. Geef een duidelijke grammatica-uitleg van de gegeven Latijnse tekst in het Nederlands. Bespreek woordsoorten, naamvallen, werkwoordsvormen en zinsstructuur.'
-    uitleg, _ = groq_vraag(systeem, uitleg)
+    uitleg, _ = groq_vraag(systeem, tekst)
     return jsonify({'uitleg': uitleg})
 
 @app.route('/api/woorden')
@@ -233,8 +208,13 @@ def api_voortgang():
     word_id = data.get('word_id')
     juist = data.get('juist')
     nu = datetime.now().isoformat()
+    vandaag = date.today().isoformat()
+    gisteren = str(date.fromordinal(date.today().toordinal() - 1))
+
     conn = database.get_db()
     c = database.get_cursor(conn)
+
+    # Voortgang bijwerken
     c.execute(
         'SELECT * FROM progress WHERE user_id = %s AND word_id = %s',
         (current_user.id, word_id)
@@ -251,8 +231,43 @@ def api_voortgang():
             'INSERT INTO progress (user_id, word_id, score, laatste_keer) VALUES (%s, %s, %s, %s)',
             (current_user.id, word_id, 1 if juist else 0, nu)
         )
+
+    # XP bijwerken
     if juist:
         c.execute('UPDATE users SET xp = xp + 10 WHERE id = %s', (current_user.id,))
+
+    # Streak bijwerken bij oefenen
+    c.execute('SELECT last_active, streak FROM users WHERE id = %s', (current_user.id,))
+    user = c.fetchone()
+    if user['last_active'] != vandaag:
+        if user['last_active'] == gisteren:
+            c.execute('UPDATE users SET streak = streak + 1, last_active = %s WHERE id = %s', (vandaag, current_user.id))
+        else:
+            c.execute('UPDATE users SET streak = 1, last_active = %s WHERE id = %s', (vandaag, current_user.id))
+
+    conn.commit()
+    c.close()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/suggestie', methods=['POST'])
+@login_required
+def api_suggestie():
+    data = request.get_json()
+    word_id = data.get('word_id')
+    veld = data.get('veld')
+    voorgestelde_waarde = data.get('voorgestelde_waarde')
+
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('SELECT * FROM words WHERE id = %s', (word_id,))
+    woord = c.fetchone()
+    huidige_waarde = woord[veld] if woord and veld in woord else ''
+
+    c.execute(
+        'INSERT INTO suggesties (user_id, word_id, veld, huidige_waarde, voorgestelde_waarde) VALUES (%s, %s, %s, %s, %s)',
+        (current_user.id, word_id, veld, huidige_waarde, voorgestelde_waarde)
+    )
     conn.commit()
     c.close()
     conn.close()
@@ -280,6 +295,49 @@ def admin_panel():
     c.close()
     conn.close()
     return render_template('admin/panel.html', users=users)
+
+@app.route('/admin/suggesties')
+def admin_suggesties():
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('''
+        SELECT s.*, w.grondwoord, u.username
+        FROM suggesties s
+        JOIN words w ON s.word_id = w.id
+        JOIN users u ON s.user_id = u.id
+        WHERE s.status = 'open'
+        ORDER BY s.aangemaakt_op DESC
+    ''')
+    suggesties = c.fetchall()
+    c.close()
+    conn.close()
+    return render_template('admin/suggesties.html', suggesties=suggesties)
+
+@app.route('/admin/suggestie_verwerken/<int:suggestie_id>', methods=['POST'])
+def admin_suggestie_verwerken(suggestie_id):
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    actie = request.form.get('actie')
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+
+    if actie == 'goedkeuren':
+        c.execute('SELECT * FROM suggesties WHERE id = %s', (suggestie_id,))
+        s = c.fetchone()
+        c.execute(
+            f'UPDATE words SET {s["veld"]} = %s WHERE id = %s',
+            (s['voorgestelde_waarde'], s['word_id'])
+        )
+        c.execute('UPDATE suggesties SET status = %s WHERE id = %s', ('goedgekeurd', suggestie_id))
+    else:
+        c.execute('UPDATE suggesties SET status = %s WHERE id = %s', ('afgewezen', suggestie_id))
+
+    conn.commit()
+    c.close()
+    conn.close()
+    return redirect(url_for('admin_suggesties'))
 
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 def reset_password(user_id):
