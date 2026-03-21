@@ -214,7 +214,6 @@ def api_voortgang():
     conn = database.get_db()
     c = database.get_cursor(conn)
 
-    # Voortgang bijwerken
     c.execute(
         'SELECT * FROM progress WHERE user_id = %s AND word_id = %s',
         (current_user.id, word_id)
@@ -232,11 +231,9 @@ def api_voortgang():
             (current_user.id, word_id, 1 if juist else 0, nu)
         )
 
-    # XP bijwerken
     if juist:
         c.execute('UPDATE users SET xp = xp + 10 WHERE id = %s', (current_user.id,))
 
-    # Streak bijwerken bij oefenen
     c.execute('SELECT last_active, streak FROM users WHERE id = %s', (current_user.id,))
     user = c.fetchone()
     if user['last_active'] != vandaag:
@@ -338,6 +335,18 @@ def admin_suggestie_verwerken(suggestie_id):
     c.close()
     conn.close()
     return redirect(url_for('admin_suggesties'))
+
+@app.route('/admin/woordjes')
+def admin_woordjes():
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('SELECT * FROM words ORDER BY nummer')
+    woorden = c.fetchall()
+    c.close()
+    conn.close()
+    return render_template('admin/woordjes.html', woorden=woorden)
 
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 def reset_password(user_id):

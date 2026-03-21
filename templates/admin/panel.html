@@ -11,6 +11,7 @@
             display: flex;
             gap: 12px;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
         .admin-nav a {
             padding: 8px 18px;
@@ -24,36 +25,6 @@
         .admin-nav a:hover {
             opacity: 0.85;
         }
-        .woorden-tabel {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-        .woorden-tabel th, .woorden-tabel td {
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            text-align: left;
-        }
-        .woorden-tabel th {
-            background: var(--bruin-donker, #5a3e2b);
-            color: white;
-            font-family: 'Cinzel', serif;
-        }
-        .woorden-tabel tr:nth-child(even) {
-            background: #f9f5f0;
-        }
-        .filter-rij {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 1rem;
-            align-items: center;
-        }
-        .filter-rij input, .filter-rij select {
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
@@ -61,14 +32,12 @@
     <h1 class="logo-title">Admin Paneel</h1>
 
     <div class="admin-nav">
-        <a href="#upload">Foto uploaden</a>
-        <a href="#woorden">Woordjes</a>
-        <a href="#gebruikers">Gebruikers</a>
         <a href="{{ url_for('admin_suggesties') }}">Suggesties</a>
+        <a href="{{ url_for('admin_woordjes') }}">Woordjes</a>
     </div>
 
     <!-- FOTO UPLOADEN -->
-    <h2 id="upload" style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Foto uploaden</h2>
+    <h2 style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Foto uploaden</h2>
     <div class="keuze-box" style="margin-bottom: 2rem;">
         <div class="keuze-rij">
             <label>Hoofdstuk nummer</label>
@@ -83,34 +52,8 @@
         <div id="upload-resultaat" class="verborgen"></div>
     </div>
 
-    <!-- WOORDJES OVERZICHT -->
-    <h2 id="woorden" style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Woordjes</h2>
-    <div class="filter-rij">
-        <input type="text" id="zoek" placeholder="Zoek op woord of vertaling..." oninput="filterWoorden()">
-        <select id="filter-hoofdstuk" onchange="filterWoorden()">
-            <option value="">Alle hoofdstukken</option>
-        </select>
-        <span id="woord-aantal" style="color:#888; font-size:0.9rem;"></span>
-    </div>
-    <div style="overflow-x:auto;">
-        <table class="woorden-tabel" id="woorden-tabel">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Hfdst</th>
-                    <th>Soort</th>
-                    <th>Grondwoord</th>
-                    <th>Veld2</th>
-                    <th>Veld3</th>
-                    <th>Vertaling</th>
-                </tr>
-            </thead>
-            <tbody id="woorden-tbody"></tbody>
-        </table>
-    </div>
-
     <!-- GEBRUIKERS -->
-    <h2 id="gebruikers" style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Gebruikers</h2>
+    <h2 style="font-family:'Cinzel',serif; margin: 2rem 0 1rem; color: var(--bruin-donker);">Gebruikers</h2>
     <table class="admin-table">
         <thead>
             <tr>
@@ -141,58 +84,6 @@
 </div>
 
 <script>
-let alleWoorden = [];
-
-async function laadWoorden() {
-    const res = await fetch('/api/woorden?van=1&tot=9999');
-    const data = await res.json();
-    alleWoorden = data.woorden || [];
-
-    // Hoofdstukken verzamelen
-    const hoofdstukken = [...new Set(alleWoorden.map(w => w.hoofdstuk))].sort((a,b) => a-b);
-    const select = document.getElementById('filter-hoofdstuk');
-    hoofdstukken.forEach(h => {
-        const opt = document.createElement('option');
-        opt.value = h;
-        opt.textContent = 'Hoofdstuk ' + h;
-        select.appendChild(opt);
-    });
-
-    filterWoorden();
-}
-
-function filterWoorden() {
-    const zoek = document.getElementById('zoek').value.toLowerCase();
-    const hoofdstuk = document.getElementById('filter-hoofdstuk').value;
-
-    let gefilterd = alleWoorden.filter(w => {
-        const matchZoek = !zoek ||
-            (w.grondwoord || '').toLowerCase().includes(zoek) ||
-            (w.vertaling || '').toLowerCase().includes(zoek) ||
-            (w.veld2 || '').toLowerCase().includes(zoek);
-        const matchHoofdstuk = !hoofdstuk || String(w.hoofdstuk) === hoofdstuk;
-        return matchZoek && matchHoofdstuk;
-    });
-
-    const tbody = document.getElementById('woorden-tbody');
-    tbody.innerHTML = '';
-    gefilterd.forEach(w => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${w.nummer}</td>
-            <td>${w.hoofdstuk}</td>
-            <td>${w.woordsoort}</td>
-            <td><strong>${w.grondwoord}</strong></td>
-            <td>${w.veld2 || ''}</td>
-            <td>${w.veld3 || ''}</td>
-            <td>${w.vertaling}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    document.getElementById('woord-aantal').textContent = gefilterd.length + ' woorden';
-}
-
 async function uploadFoto() {
     const hoofdstuk = document.getElementById('hoofdstuk').value;
     const foto = document.getElementById('foto').files[0];
@@ -222,14 +113,11 @@ async function uploadFoto() {
                 data.woorden.map(w => `#${w.nummer} ${w.grondwoord} — ${w.vertaling}`).join('<br>');
             resultaat.classList.remove('verborgen');
         }
-        laadWoorden(); // tabel herladen
     } else {
         melding.textContent = '✗ Fout: ' + data.fout;
         melding.className = 'feedback-fout';
     }
 }
-
-laadWoorden();
 </script>
 </body>
 </html>

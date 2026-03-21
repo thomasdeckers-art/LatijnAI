@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Woordjes — LatijnAI Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        .woorden-tabel {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .woorden-tabel th, .woorden-tabel td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .woorden-tabel th {
+            background: #5a3e2b;
+            color: white;
+            font-family: 'Cinzel', serif;
+        }
+        .woorden-tabel tr:nth-child(even) {
+            background: #f9f5f0;
+        }
+    </style>
+</head>
+<body>
+<div class="admin-container">
+    <h1 class="logo-title">Woordjes</h1>
+    <a href="{{ url_for('admin_panel') }}" style="color: #5a3e2b;">← Terug naar panel</a>
+    <br><br>
+    <p style="color:#888;">{{ woorden|length }} woorden in de database</p>
+    <table class="woorden-tabel">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Hfdst</th>
+                <th>Soort</th>
+                <th>Grondwoord</th>
+                <th>Veld2</th>
+                <th>Veld3</th>
+                <th>Vertaling</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in woorden %}
+            <tr>
+                <td>{{ w.nummer }}</td>
+                <td>{{ w.hoofdstuk }}</td>
+                <td>{{ w.woordsoort }}</td>
+                <td><strong>{{ w.grondwoord }}</strong></td>
+                <td>{{ w.veld2 or '' }}</td>
+                <td>{{ w.veld3 or '' }}</td>
+                <td>{{ w.vertaling }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
