@@ -10,6 +10,7 @@ from PIL import Image
 import io
 from groq import Groq
 import anthropic
+import json
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -381,13 +382,13 @@ def admin_upload_foto():
     foto_bytes = foto.read()
     img = Image.open(io.BytesIO(foto_bytes))
     img = img.convert('RGB')
-    # Maximale breedte 1200px
     if img.width > 1200:
         verhouding = 1200 / img.width
         nieuwe_hoogte = int(img.height * verhouding)
         img = img.resize((1200, nieuwe_hoogte), Image.LANCZOS)
     output = io.BytesIO()
     img.save(output, format='JPEG', quality=60)
+    foto_bytes = output.getvalue()
 
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
     media_type = 'image/jpeg'
@@ -396,13 +397,36 @@ def admin_upload_foto():
 
     prompt = """Dit is een pagina uit een Latijns woordjesboek (Pegasus Novus, 2e middelbaar).
 Haal alle woordjes eruit en geef ze terug als JSON lijst.
+
 Elk woord heeft deze velden:
 - nummer (int): het nummer van het woord
-- woordsoort (string): leid dit af uit de structuur van het woord
+- woordsoort (string): gebruik EXACT deze codes:
+  * znw12 = zelfstandig naamwoord 1e of 2e declinatie
+  * znw3 = zelfstandig naamwoord 3e declinatie
+  * ww = werkwoord
+  * bnw1 = bijvoegelijk naamwoord 1e klasse (2 uitgangen)
+  * bnw2 = bijvoegelijk naamwoord 2e klasse (3 uitgangen)
+  * bvw = bijwoord
+  * vz = voorzetsel
+  * ovw = onderschikkend voegwoord
+  * nvw = nevenschikkend voegwoord
+  * tw = telwoord
 - grondwoord (string): het eerste woord zoals het in het boek staat
-- veld2 (string of null): genitief, 1e persoon, stam, vrouwelijk, of woordsoortlabel
-- veld3 (string of null): geslacht, stamtijden, onzijdig, of null
-- veld4 (string of null): extra veld indien nodig, anders null
+- veld2 (string of null):
+  * znw12: genitief
+  * znw3: stam + geslacht
+  * ww: 1e persoon enkelvoud
+  * bnw1: vrouwelijke en onzijdige vorm
+  * bnw2: vrouwelijke, onzijdige vorm en genitief
+  * bvw: null
+  * vz: null
+  * ovw: null
+  * nvw: null
+  * tw: null
+- veld3 (string of null):
+  * ww: stamtijden
+  * anders: null
+- veld4 (string of null): altijd null
 - vertaling (string): de Nederlandse vertaling
 
 Belangrijk: geef ABSOLUUT alleen een JSON array terug, beginnend met [ en eindigend met ].
@@ -431,7 +455,6 @@ Geen tekst ervoor of erna, geen uitleg, geen markdown, geen backticks."""
             }]
         )
 
-        import json
         tekst = response.content[0].text.strip()
         if tekst.startswith('```'):
             tekst = tekst.split('\n', 1)[1]

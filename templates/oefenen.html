@@ -37,8 +37,11 @@
 
         <div id="feedback" class="verborgen"></div>
 
-        <button onclick="controleer()" id="controleer-btn">Controleer</button>
-        <button onclick="volgend()" id="volgend-btn" class="verborgen">Volgend woord →</button>
+        <div id="actie-knoppen">
+            <button onclick="controleer()" id="controleer-btn">Controleer</button>
+            <button onclick="tochJuist()" id="toch-juist-btn" class="verborgen" style="background:#888;">Toch juist</button>
+            <button onclick="volgend()" id="volgend-btn" class="verborgen">Volgend woord →</button>
+        </div>
     </div>
 
     <div id="einde-scherm" class="verborgen">
@@ -91,6 +94,12 @@
     font-size: 0.8em;
     margin-top: 4px;
 }
+#actie-knoppen {
+    display: flex;
+    gap: 10px;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
 </style>
 
 <script>
@@ -99,6 +108,15 @@ let huidigIndex = 0;
 let juist = 0;
 let fout = 0;
 let velden = [];
+let huidigWoord = null;
+
+function normaliseer(tekst) {
+    // Flexibele vergelijking: puntkomma, komma en spatie zijn uitwisselbaar
+    return tekst.trim().toLowerCase()
+        .replace(/[;,]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
 
 async function startOefening() {
     const van = document.getElementById('van').value;
@@ -123,10 +141,10 @@ async function startOefening() {
 }
 
 function toonWoord() {
-    const woord = woorden[huidigIndex];
-    document.getElementById('woord-nummer').textContent = '#' + woord.nummer;
-    document.getElementById('grondwoord').textContent = woord.grondwoord;
-    document.getElementById('woordsoort').textContent = woord.woordsoort;
+    huidigWoord = woorden[huidigIndex];
+    document.getElementById('woord-nummer').textContent = '#' + huidigWoord.nummer;
+    document.getElementById('grondwoord').textContent = huidigWoord.grondwoord;
+    document.getElementById('woordsoort').textContent = huidigWoord.woordsoort;
     document.getElementById('woord-teller').textContent = `Woord ${huidigIndex + 1} / ${woorden.length}`;
     document.getElementById('score-teller').innerHTML = `✓ ${juist} &nbsp; ✗ ${fout}`;
 
@@ -135,31 +153,36 @@ function toonWoord() {
 
     document.getElementById('feedback').classList.add('verborgen');
     document.getElementById('controleer-btn').classList.remove('verborgen');
+    document.getElementById('toch-juist-btn').classList.add('verborgen');
     document.getElementById('volgend-btn').classList.add('verborgen');
 
     const invulBox = document.getElementById('invul-box');
     invulBox.innerHTML = '';
     velden = [];
 
-    const soort = woord.woordsoort;
+    const soort = huidigWoord.woordsoort;
 
     if (soort === 'znw12') {
         voegVeldToe(invulBox, 'Genitief', 'veld2');
         voegVeldToe(invulBox, 'Vertaling', 'vertaling');
     } else if (soort === 'znw3') {
-        voegVeldToe(invulBox, 'Stam', 'veld2');
-        voegVeldToe(invulBox, 'Geslacht (m./v./o.)', 'veld3');
+        voegVeldToe(invulBox, 'Stam + geslacht', 'veld2');
         voegVeldToe(invulBox, 'Vertaling', 'vertaling');
     } else if (soort === 'ww') {
         voegVeldToe(invulBox, '1e persoon', 'veld2');
-        voegVeldToe(invulBox, 'Stamtijden (indien aanwezig)', 'veld3');
+        voegVeldToe(invulBox, 'Stamtijden', 'veld3');
         voegVeldToe(invulBox, 'Vertaling', 'vertaling');
-    } else if (soort === 'bnw') {
-        voegVeldToe(invulBox, 'Vrouwelijk', 'veld2');
-        voegVeldToe(invulBox, 'Onzijdig', 'veld3');
+    } else if (soort === 'bnw1') {
+        voegVeldToe(invulBox, 'Vrouwelijk + onzijdig', 'veld2');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else if (soort === 'bnw2') {
+        voegVeldToe(invulBox, 'Vrouwelijk + onzijdig + genitief', 'veld2');
+        voegVeldToe(invulBox, 'Vertaling', 'vertaling');
+    } else if (soort === 'bvw' || soort === 'vz' || soort === 'ovw' || soort === 'nvw' || soort === 'tw') {
+        voegVeldToe(invulBox, 'Woordsoort', 'veld2');
         voegVeldToe(invulBox, 'Vertaling', 'vertaling');
     } else {
-        voegVeldToe(invulBox, woord.woordsoort, 'veld2');
+        voegVeldToe(invulBox, 'Middenkolom', 'veld2');
         voegVeldToe(invulBox, 'Vertaling', 'vertaling');
     }
 
@@ -194,16 +217,16 @@ function voegVeldToe(container, label, sleutel) {
 }
 
 function controleer() {
-    const woord = woorden[huidigIndex];
+    const woord = huidigWoord;
     let alleJuist = true;
 
     velden.forEach(v => {
-        const ingegeven = v.input.value.trim().toLowerCase();
+        const ingegeven = normaliseer(v.input.value);
         let correct = '';
-        if (v.sleutel === 'vertaling') correct = (woord.vertaling || '').toLowerCase();
-        else if (v.sleutel === 'veld2') correct = (woord.veld2 || '').toLowerCase();
-        else if (v.sleutel === 'veld3') correct = (woord.veld3 || '').toLowerCase();
-        else if (v.sleutel === 'veld4') correct = (woord.veld4 || '').toLowerCase();
+        if (v.sleutel === 'vertaling') correct = normaliseer(woord.vertaling || '');
+        else if (v.sleutel === 'veld2') correct = normaliseer(woord.veld2 || '');
+        else if (v.sleutel === 'veld3') correct = normaliseer(woord.veld3 || '');
+        else if (v.sleutel === 'veld4') correct = normaliseer(woord.veld4 || '');
 
         if (ingegeven === correct) {
             v.input.style.borderColor = '#3B6D11';
@@ -236,10 +259,12 @@ function controleer() {
         juist++;
         feedback.textContent = '✓ Correct!';
         feedback.className = 'feedback-juist';
+        document.getElementById('toch-juist-btn').classList.add('verborgen');
     } else {
         fout++;
         feedback.textContent = '✗ Fout — bekijk de rode velden';
         feedback.className = 'feedback-fout';
+        document.getElementById('toch-juist-btn').classList.remove('verborgen');
     }
 
     fetch('/api/voortgang', {
@@ -252,8 +277,33 @@ function controleer() {
     document.getElementById('volgend-btn').classList.remove('verborgen');
 }
 
+function tochJuist() {
+    // Fout ongedaan maken, juist tellen
+    fout--;
+    juist++;
+    document.getElementById('score-teller').innerHTML = `✓ ${juist} &nbsp; ✗ ${fout}`;
+
+    const feedback = document.getElementById('feedback');
+    feedback.textContent = '✓ Toch juist!';
+    feedback.className = 'feedback-juist';
+
+    document.getElementById('toch-juist-btn').classList.add('verborgen');
+
+    // Rode velden groen maken
+    velden.forEach(v => {
+        v.input.style.borderColor = '#3B6D11';
+        v.input.style.background = '#EAF3DE';
+    });
+
+    // XP geven
+    fetch('/api/voortgang', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({word_id: huidigWoord.id, juist: true})
+    });
+}
+
 function toonSuggestieForm(container, wordId, veld, huidigeWaarde) {
-    // Verwijder bestaande form als die er al is
     const bestaand = container.querySelector('.suggestie-form');
     if (bestaand) bestaand.remove();
 
