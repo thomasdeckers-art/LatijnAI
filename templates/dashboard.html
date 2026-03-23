@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="dashboard">
-
     <div class="welkom-card">
         <h2>Salve, {{ current_user.username }}!</h2>
         <div class="badge">{{ level }}</div>
@@ -16,7 +15,6 @@
             </div>
         </div>
     </div>
-
     <div class="menu-cards">
         <a href="{{ url_for('oefenen') }}" class="menu-card">
             <span class="menu-icon">📖</span>
@@ -29,7 +27,15 @@
             <span class="menu-sub">Latijn naar Nederlands</span>
         </a>
     </div>
-
+    <div class="proxy-card">
+        <span class="menu-icon">🌐</span>
+        <span class="menu-titel">Web Proxy</span>
+        <span class="menu-sub">Surf via proxy</span>
+        <div class="proxy-zoek">
+            <input type="text" id="proxy-url" placeholder="bv. perseus.tufts.edu" />
+            <button onclick="openProxy()">Open</button>
+        </div>
+    </div>
     <div class="leaderboard">
         <h3>Top 5</h3>
         <ol>
@@ -41,6 +47,21 @@
             {% endfor %}
         </ol>
     </div>
-
 </div>
+
+<script>
+function openProxy() {
+    let url = document.getElementById('proxy-url').value.trim();
+    if (!url) return;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+    }
+    const proxyUrl = 'https://www.croxyproxy.com/requests?url=' + encodeURIComponent(url);
+    window.open(proxyUrl, '_blank');
+}
+
+document.getElementById('proxy-url').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') openProxy();
+});
+</script>
 {% endblock %}
