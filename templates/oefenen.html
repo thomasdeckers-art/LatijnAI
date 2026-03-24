@@ -48,6 +48,7 @@
         <div class="einde-card">
             <h3>Oefening voltooid!</h3>
             <div id="einde-stats"></div>
+            <div id="herhaal-knop-container"></div>
             <button onclick="opnieuw()">Opnieuw</button>
             <a href="{{ url_for('dashboard') }}" class="knop-link">Terug naar dashboard</a>
         </div>
@@ -109,9 +110,9 @@ let juist = 0;
 let fout = 0;
 let velden = [];
 let huidigWoord = null;
+let fouteWoorden = [];
 
 function normaliseer(tekst) {
-    // Flexibele vergelijking: puntkomma, komma en spatie zijn uitwisselbaar
     return tekst.trim().toLowerCase()
         .replace(/[;,]/g, ' ')
         .replace(/\s+/g, ' ')
@@ -134,8 +135,21 @@ async function startOefening() {
     huidigIndex = 0;
     juist = 0;
     fout = 0;
+    fouteWoorden = [];
 
     document.getElementById('keuze-scherm').classList.add('verborgen');
+    document.getElementById('oefenen-scherm').classList.remove('verborgen');
+    toonWoord();
+}
+
+function startHerhaling() {
+    woorden = [...fouteWoorden];
+    huidigIndex = 0;
+    juist = 0;
+    fout = 0;
+    fouteWoorden = [];
+
+    document.getElementById('einde-scherm').classList.add('verborgen');
     document.getElementById('oefenen-scherm').classList.remove('verborgen');
     toonWoord();
 }
@@ -236,13 +250,11 @@ function controleer() {
             v.input.style.background = '#FCEBEB';
             alleJuist = false;
 
-            // Juist antwoord tonen
             const juistDiv = document.createElement('div');
             juistDiv.className = 'juist-antwoord';
             juistDiv.textContent = '✓ ' + (correct || '(leeg)');
             v.div.appendChild(juistDiv);
 
-            // Suggestie knop
             const suggestieKnop = document.createElement('button');
             suggestieKnop.className = 'suggestie-knop';
             suggestieKnop.textContent = 'Antwoord klopt niet? Geef suggestie';
@@ -262,6 +274,7 @@ function controleer() {
         document.getElementById('toch-juist-btn').classList.add('verborgen');
     } else {
         fout++;
+        fouteWoorden.push(woord);
         feedback.textContent = '✗ Fout — bekijk de rode velden';
         feedback.className = 'feedback-fout';
         document.getElementById('toch-juist-btn').classList.remove('verborgen');
@@ -278,9 +291,9 @@ function controleer() {
 }
 
 function tochJuist() {
-    // Fout ongedaan maken, juist tellen
     fout--;
     juist++;
+    fouteWoorden = fouteWoorden.filter(w => w.id !== huidigWoord.id);
     document.getElementById('score-teller').innerHTML = `✓ ${juist} &nbsp; ✗ ${fout}`;
 
     const feedback = document.getElementById('feedback');
@@ -289,13 +302,11 @@ function tochJuist() {
 
     document.getElementById('toch-juist-btn').classList.add('verborgen');
 
-    // Rode velden groen maken
     velden.forEach(v => {
         v.input.style.borderColor = '#3B6D11';
         v.input.style.background = '#EAF3DE';
     });
 
-    // XP geven
     fetch('/api/voortgang', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -357,6 +368,18 @@ function toonEinde() {
         <p>✓ ${juist} juist &nbsp; ✗ ${fout} fout</p>
         <p>${procent}% correct</p>
     `;
+
+    const herhaалContainer = document.getElementById('herhaal-knop-container');
+    herhaалContainer.innerHTML = '';
+    if (fouteWoorden.length > 0) {
+        const knop = document.createElement('button');
+        knop.textContent = `Herhaal ${fouteWoorden.length} foute woordjes`;
+        knop.style.background = '#FCEBEB';
+        knop.style.borderColor = '#A32D2D';
+        knop.style.color = '#A32D2D';
+        knop.onclick = startHerhaling;
+        herhaалContainer.appendChild(knop);
+    }
 }
 
 function opnieuw() {
