@@ -364,6 +364,18 @@ def reset_password(user_id):
     c.close()
     conn.close()
     return redirect(url_for('admin_panel'))
+   @app.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+
+def delete_user(user_id):
+    if not session.get('admin'):
+        return redirect(url_for('admin_login'))
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    conn.commit()
+    c.close()
+    conn.close()
+    return redirect(url_for('admin_panel'))
 
 @app.route('/admin/upload_foto', methods=['POST'])
 def admin_upload_foto():
