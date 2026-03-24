@@ -13,21 +13,6 @@
                 <span class="stat-label">Streak</span>
                 <span class="stat-value">🔥 {{ current_user.streak }}</span>
             </div>
-{% extends 'base.html' %}
-{% block content %}
-<div class="dashboard">
-    <div class="welkom-card">
-        <h2>Salve, {{ current_user.username }}!</h2>
-        <div class="badge">{{ level }}</div>
-        <div class="stats">
-            <div class="stat">
-                <span class="stat-label">XP</span>
-                <span class="stat-value">{{ current_user.xp }}</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Streak</span>
-                <span class="stat-value">🔥 {{ current_user.streak }}</span>
-            </div>
         </div>
     </div>
     <div class="menu-cards">
@@ -63,7 +48,6 @@
         </ol>
     </div>
 </div>
-
 <script>
 function openProxy() {
     let url = document.getElementById('proxy-url').value.trim();
@@ -71,23 +55,19 @@ function openProxy() {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
     }
-
     const form = document.createElement('form');
     form.method = 'GET';
     form.action = 'https://www.croxyproxy.com/';
     form.target = '_blank';
-
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = 'url';
     input.value = url;
-
     form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
 }
-
 document.getElementById('proxy-url').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') openProxy();
 });
