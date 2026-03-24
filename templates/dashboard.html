@@ -13,6 +13,21 @@
                 <span class="stat-label">Streak</span>
                 <span class="stat-value">🔥 {{ current_user.streak }}</span>
             </div>
+{% extends 'base.html' %}
+{% block content %}
+<div class="dashboard">
+    <div class="welkom-card">
+        <h2>Salve, {{ current_user.username }}!</h2>
+        <div class="badge">{{ level }}</div>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">XP</span>
+                <span class="stat-value">{{ current_user.xp }}</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak</span>
+                <span class="stat-value">🔥 {{ current_user.streak }}</span>
+            </div>
         </div>
     </div>
     <div class="menu-cards">
@@ -32,7 +47,7 @@
         <span class="menu-titel">Web Proxy</span>
         <span class="menu-sub">Surf via proxy</span>
         <div class="proxy-zoek">
-            <input type="text" id="proxy-url" placeholder="bv. perseus.tufts.edu" />
+            <input type="text" id="proxy-url" placeholder="bv. wikipedia.org" />
             <button onclick="openProxy()">Open</button>
         </div>
     </div>
@@ -56,8 +71,21 @@ function openProxy() {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
     }
-    const proxyUrl = 'https://www.croxyproxy.com/requests?url=' + encodeURIComponent(url);
-    window.open(proxyUrl, '_blank');
+
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = 'https://www.croxyproxy.com/';
+    form.target = '_blank';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'url';
+    input.value = url;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 document.getElementById('proxy-url').addEventListener('keydown', function(e) {
