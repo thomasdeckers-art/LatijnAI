@@ -57,11 +57,11 @@ function openProxy() {
     }
     const form = document.createElement('form');
     form.method = 'GET';
-    form.action = 'https://translate.google.com/translate';
+    form.action = 'https://www.croxyproxy.com/';
     form.target = '_blank';
     const input = document.createElement('input');
     input.type = 'hidden';
-    input.name = 'u';
+    input.name = 'url';
     input.value = url;
     form.appendChild(input);
     document.body.appendChild(form);
