@@ -26,6 +26,34 @@
         .woorden-tabel tr:nth-child(even) {
             background: #f9f5f0;
         }
+        .verwijder-balk {
+            display: none;
+            position: sticky;
+            bottom: 1rem;
+            background: #FCEBEB;
+            border: 1px solid #A32D2D;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .verwijder-balk.zichtbaar {
+            display: flex;
+        }
+        .verwijder-balk button {
+            background: #A32D2D;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+        }
+        .verwijder-balk button:hover {
+            background: #7a2020;
+        }
     </style>
 </head>
 <body>
@@ -37,6 +65,7 @@
     <table class="woorden-tabel">
         <thead>
             <tr>
+                <th style="width:36px;"></th>
                 <th>#</th>
                 <th>Hfdst</th>
                 <th>Soort</th>
@@ -49,6 +78,7 @@
         <tbody>
             {% for w in woorden %}
             <tr>
+                <td><input type="checkbox" class="selecteer" value="{{ w.id }}" onchange="updateBalk()"></td>
                 <td>{{ w.nummer }}</td>
                 <td>{{ w.hoofdstuk }}</td>
                 <td>{{ w.woordsoort }}</td>
@@ -60,6 +90,43 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <div class="verwijder-balk" id="verwijder-balk">
+        <span id="selectie-tekst">0 geselecteerd</span>
+        <button onclick="verwijderSelectie()">Verwijder geselecteerde</button>
+    </div>
 </div>
+
+<script>
+function updateBalk() {
+    const geselecteerd = document.querySelectorAll('.selecteer:checked');
+    const balk = document.getElementById('verwijder-balk');
+    const tekst = document.getElementById('selectie-tekst');
+    tekst.textContent = geselecteerd.length + ' geselecteerd';
+    if (geselecteerd.length > 0) {
+        balk.classList.add('zichtbaar');
+    } else {
+        balk.classList.remove('zichtbaar');
+    }
+}
+
+async function verwijderSelectie() {
+    const geselecteerd = document.querySelectorAll('.selecteer:checked');
+    const ids = Array.from(geselecteerd).map(cb => cb.value);
+    if (!confirm(`${ids.length} woordjes verwijderen?`)) return;
+
+    const res = await fetch('/admin/delete_words', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids})
+    });
+    const data = await res.json();
+    if (data.ok) {
+        location.reload();
+    } else {
+        alert('Fout: ' + data.fout);
+    }
+}
+</script>
 </body>
 </html>

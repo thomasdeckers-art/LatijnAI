@@ -377,6 +377,21 @@ def delete_user(user_id):
     conn.close()
     return redirect(url_for('admin_panel'))
 
+@app.route('/admin/delete_words', methods=['POST'])
+def admin_delete_words():
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'fout': 'Niet ingelogd.'})
+    data = request.get_json()
+    ids = data.get('ids', [])
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    for word_id in ids:
+        c.execute('DELETE FROM words WHERE id = %s', (word_id,))
+    conn.commit()
+    c.close()
+    conn.close()
+    return jsonify({'ok': True})
+
 @app.route('/admin/upload_foto', methods=['POST'])
 def admin_upload_foto():
     if not session.get('admin'):
