@@ -54,6 +54,47 @@
         .verwijder-balk button:hover {
             background: #7a2020;
         }
+        .bewerk-knop {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #5a3e2b;
+        }
+        .bewerk-knop:hover { background: #f0ebe4; }
+        .bewerk-rij td {
+            background: #fffbf5 !important;
+            padding: 6px 8px !important;
+        }
+        .bewerk-rij input, .bewerk-rij select {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: 'Lato', sans-serif;
+        }
+        .opslaan-knop {
+            background: #3B6D11;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .annuleer-knop {
+            background: #888;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -62,7 +103,7 @@
     <a href="{{ url_for('admin_panel') }}" style="color: #5a3e2b;">← Terug naar panel</a>
     <br><br>
     <p style="color:#888;">{{ woorden|length }} woorden in de database</p>
-    <table class="woorden-tabel">
+    <table class="woorden-tabel" id="woorden-tabel">
         <thead>
             <tr>
                 <th style="width:36px;"></th>
@@ -73,11 +114,12 @@
                 <th>Veld2</th>
                 <th>Veld3</th>
                 <th>Vertaling</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for w in woorden %}
-            <tr>
+            <tr id="rij-{{ w.id }}" data-id="{{ w.id }}">
                 <td><input type="checkbox" class="selecteer" value="{{ w.id }}" onchange="updateBalk()"></td>
                 <td>{{ w.nummer }}</td>
                 <td>{{ w.hoofdstuk }}</td>
@@ -86,6 +128,7 @@
                 <td>{{ w.veld2 or '' }}</td>
                 <td>{{ w.veld3 or '' }}</td>
                 <td>{{ w.vertaling }}</td>
+                <td><button class="bewerk-knop" onclick="bewerkRij({{ w.id }}, '{{ w.nummer }}', '{{ w.hoofdstuk }}', '{{ w.woordsoort }}', {{ w.grondwoord|tojson }}, {{ (w.veld2 or '')|tojson }}, {{ (w.veld3 or '')|tojson }}, {{ w.vertaling|tojson }})">✏️</button></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -103,29 +146,63 @@ function updateBalk() {
     const balk = document.getElementById('verwijder-balk');
     const tekst = document.getElementById('selectie-tekst');
     tekst.textContent = geselecteerd.length + ' geselecteerd';
-    if (geselecteerd.length > 0) {
-        balk.classList.add('zichtbaar');
-    } else {
-        balk.classList.remove('zichtbaar');
-    }
+    balk.classList.toggle('zichtbaar', geselecteerd.length > 0);
 }
 
 async function verwijderSelectie() {
     const geselecteerd = document.querySelectorAll('.selecteer:checked');
     const ids = Array.from(geselecteerd).map(cb => cb.value);
     if (!confirm(`${ids.length} woordjes verwijderen?`)) return;
-
     const res = await fetch('/admin/delete_words', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ids: ids})
     });
     const data = await res.json();
-    if (data.ok) {
-        location.reload();
-    } else {
-        alert('Fout: ' + data.fout);
-    }
+    if (data.ok) location.reload();
+    else alert('Fout: ' + data.fout);
+}
+
+function bewerkRij(id, nummer, hoofdstuk, woordsoort, grondwoord, veld2, veld3, vertaling) {
+    const rij = document.getElementById('rij-' + id);
+    const soorten = ['znw12','znw3','ww','bnw1','bnw2','bvw','vz','ovw','nvw','tw'];
+    const opties = soorten.map(s => `<option value="${s}" ${s === woordsoort ? 'selected' : ''}>${s}</option>`).join('');
+
+    rij.innerHTML = `
+        <td></td>
+        <td><input id="e-nummer-${id}" value="${nummer}" style="width:50px"></td>
+        <td><input id="e-hfdst-${id}" value="${hoofdstuk}" style="width:40px"></td>
+        <td><select id="e-soort-${id}">${opties}</select></td>
+        <td><input id="e-grond-${id}" value="${grondwoord}"></td>
+        <td><input id="e-veld2-${id}" value="${veld2}"></td>
+        <td><input id="e-veld3-${id}" value="${veld3}"></td>
+        <td><input id="e-vert-${id}" value="${vertaling}"></td>
+        <td>
+            <button class="opslaan-knop" onclick="slaOp(${id})">Opslaan</button>
+            <button class="annuleer-knop" onclick="location.reload()">✕</button>
+        </td>
+    `;
+    rij.classList.add('bewerk-rij');
+}
+
+async function slaOp(id) {
+    const data = {
+        nummer: document.getElementById('e-nummer-' + id).value,
+        hoofdstuk: document.getElementById('e-hfdst-' + id).value,
+        woordsoort: document.getElementById('e-soort-' + id).value,
+        grondwoord: document.getElementById('e-grond-' + id).value,
+        veld2: document.getElementById('e-veld2-' + id).value,
+        veld3: document.getElementById('e-veld3-' + id).value,
+        vertaling: document.getElementById('e-vert-' + id).value,
+    };
+    const res = await fetch('/admin/edit_word/' + id, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.ok) location.reload();
+    else alert('Fout: ' + result.fout);
 }
 </script>
 </body>

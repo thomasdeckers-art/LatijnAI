@@ -351,6 +351,26 @@ def admin_woordjes():
     conn.close()
     return render_template('admin/woordjes.html', woorden=woorden)
 
+@app.route('/admin/edit_word/<int:word_id>', methods=['POST'])
+def admin_edit_word(word_id):
+    if not session.get('admin'):
+        return jsonify({'ok': False, 'fout': 'Niet ingelogd.'})
+    data = request.get_json()
+    conn = database.get_db()
+    c = database.get_cursor(conn)
+    c.execute('''
+        UPDATE words SET nummer=%s, hoofdstuk=%s, woordsoort=%s, grondwoord=%s,
+        veld2=%s, veld3=%s, vertaling=%s WHERE id=%s
+    ''', (
+        data.get('nummer'), data.get('hoofdstuk'), data.get('woordsoort'),
+        data.get('grondwoord'), data.get('veld2') or None,
+        data.get('veld3') or None, data.get('vertaling'), word_id
+    ))
+    conn.commit()
+    c.close()
+    conn.close()
+    return jsonify({'ok': True})
+
 @app.route('/admin/reset_password/<int:user_id>', methods=['POST'])
 def reset_password(user_id):
     if not session.get('admin'):
@@ -414,7 +434,7 @@ def admin_upload_foto():
         nieuwe_hoogte = int(img.height * verhouding)
         img = img.resize((1200, nieuwe_hoogte), Image.LANCZOS)
     output = io.BytesIO()
-    img.save(output, format='JPEG', quality=60)
+    img.save(output, format='JPEG', quality=85)
     foto_bytes = output.getvalue()
 
     foto_b64 = base64.standard_b64encode(foto_bytes).decode('utf-8')
@@ -422,42 +442,42 @@ def admin_upload_foto():
 
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
-    prompt = """Dit is een pagina uit een Latijns woordjesboek (Pegasus Novus, 2e middelbaar).
-Haal alle woordjes eruit en geef ze terug als JSON lijst.
+    prompt = """Je krijgt een foto van een pagina uit het Latijnse woordjesboek "Pegasus Novus" (2e middelbaar).
 
-Elk woord heeft deze velden:
-- nummer (int): het nummer van het woord
-- woordsoort (string): gebruik EXACT deze codes:
-  * znw12 = zelfstandig naamwoord 1e of 2e declinatie
-  * znw3 = zelfstandig naamwoord 3e declinatie
-  * ww = werkwoord
-  * bnw1 = bijvoegelijk naamwoord 1e klasse (2 uitgangen)
-  * bnw2 = bijvoegelijk naamwoord 2e klasse (3 uitgangen)
-  * bvw = bijwoord
-  * vz = voorzetsel
-  * ovw = onderschikkend voegwoord
-  * nvw = nevenschikkend voegwoord
-  * tw = telwoord
-- grondwoord (string): het eerste woord zoals het in het boek staat
+Lees ALLE woordjes op de pagina zeer zorgvuldig. Let op accenten, lange klinkers en puntkomma's.
+
+Geef elk woord terug als JSON object met deze velden:
+
+- nummer (int): het woordnummer links op de pagina
+- woordsoort (string): gebruik EXACT een van deze codes:
+  znw12 = zelfstandig naamwoord 1e of 2e declinatie (heeft genitief op -ae, -i, -i)
+  znw3 = zelfstandig naamwoord 3e declinatie (heeft genitief op -is)
+  ww = werkwoord
+  bnw1 = bijvoeglijk naamwoord met 2 uitgangen
+  bnw2 = bijvoeglijk naamwoord met 3 uitgangen
+  bvw = bijwoord
+  vz = voorzetsel
+  ovw = onderschikkend voegwoord
+  nvw = nevenschikkend voegwoord
+  tw = telwoord
+- grondwoord (string): de eerste vorm zoals die in het boek staat, exact overgeschreven
 - veld2 (string of null):
-  * znw12: genitief
-  * znw3: stam + geslacht
-  * ww: 1e persoon enkelvoud
-  * bnw1: vrouwelijke en onzijdige vorm
-  * bnw2: vrouwelijke, onzijdige vorm en genitief
-  * bvw: null
-  * vz: null
-  * ovw: null
-  * nvw: null
-  * tw: null
+  znw12 → genitief (bv. "aquae")
+  znw3 → stam + geslacht (bv. "corpor-, o")
+  ww → 1e persoon enkelvoud presens (bv. "amo")
+  bnw1 → vrouwelijke en onzijdige vorm (bv. "-a, -um")
+  bnw2 → vrouwelijke, onzijdige vorm en genitief (bv. "-is, -e")
+  bvw/vz/ovw/nvw/tw → null
 - veld3 (string of null):
-  * ww: stamtijden
-  * anders: null
-- veld4 (string of null): altijd null
-- vertaling (string): de Nederlandse vertaling
+  ww → stamtijden gescheiden door komma's (bv. "amavi, amatum")
+  anders → null
+- veld4: altijd null
+- vertaling (string): de Nederlandse vertaling exact zoals in het boek
 
-Belangrijk: geef ABSOLUUT alleen een JSON array terug, beginnend met [ en eindigend met ].
-Geen tekst ervoor of erna, geen uitleg, geen markdown, geen backticks."""
+BELANGRIJK:
+- Schrijf Latijnse woorden exact over, inclusief lange klinkers (ā, ē, ī, ō, ū) indien zichtbaar
+- Geef ALLEEN een JSON array terug, geen uitleg, geen markdown, geen backticks
+- Begin direct met [ en eindig met ]"""
 
     try:
         response = client.messages.create(
