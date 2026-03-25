@@ -24,7 +24,7 @@ database.init_db()
 
 groq_client = Groq(api_key=config.GROQ_API_KEY)
 GROOT_MODEL = 'llama-3.3-70b-versatile'
-KLEIN_MODEL = 'llama3-8b-8192'
+KLEIN_MODEL = 'llama-3.1-8b-instant'
 
 class User(UserMixin):
     def __init__(self, id, username, xp, streak):
