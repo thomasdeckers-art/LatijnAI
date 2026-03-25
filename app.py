@@ -22,7 +22,7 @@ login_manager.login_view = 'login'
 
 database.init_db()
 
-groq_client = Groq(api_key=config.GROQ_API_KEY)
+groq_client = Groq(api_key=config.GROQ_API_KEY, timeout=30.0)
 GROOT_MODEL = 'llama-3.3-70b-versatile'
 KLEIN_MODEL = 'llama-3.1-8b-instant'
 
