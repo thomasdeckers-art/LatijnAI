@@ -77,7 +77,7 @@ def groq_vraag(systeem, gebruiker):
         return response.choices[0].message.content, melding
     except Exception as e1:
         melding = 'Even iets trager door hoog gebruik, we zijn zo terug op volle snelheid.'
-        print(f'GROQ GROOT MODEL FOUT: {e1}')
+        print(f'GROQ GROOT MODEL FOUT: {type(e1).__name__}: {e1}')
         try:
             response = groq_client.chat.completions.create(
                 model=KLEIN_MODEL,
@@ -88,7 +88,7 @@ def groq_vraag(systeem, gebruiker):
             )
             return response.choices[0].message.content, melding
         except Exception as e2:
-            print(f'GROQ KLEIN MODEL FOUT: {e2}')
+            print(f'GROQ KLEIN MODEL FOUT: {type(e2).__name__}: {e2}')
             return 'Er is een fout opgetreden. Probeer later opnieuw.', melding
 
 # --- ROUTES ---
